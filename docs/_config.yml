@@ -1,0 +1,5 @@
+title: Talaan Documentation
+description: Attendance Management Information System technical and user guide
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag

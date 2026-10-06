@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 306 252" role="img" aria-label="Talaan">
+  <path fill="#0b315e" fill-rule="evenodd" d="M83 20h113c6 0 11 2 15 7l24 27c3 3 5 7 5 12v55c0 16-11 27-27 27h-54v92h-44v-86c0-4-2-6-6-6H84c-16 0-26-11-26-27V47c0-16 10-27 25-27zm3 19c-6 0-9 4-9 10v65h143V69h-16c-8 0-12-5-12-13V39H86z"/>
+  <circle cx="116" cy="69" r="16" fill="#0b315e"/>
+  <path fill="#0b315e" d="M89 112c0-14 12-24 27-24s27 10 27 24H89zm66-43h49a4 4 0 0 1 0 8h-49a4 4 0 0 1 0-8zm0 18h49a4 4 0 0 1 0 8h-49a4 4 0 0 1 0-8zm0 18h49a4 4 0 0 1 0 8h-49a4 4 0 0 1 0-8zm8 100 36 35h-36z"/>
+  <path d="m171 186 20 20 50-54" fill="none" stroke="#ffbd3c" stroke-width="19" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="AMIS.API/AMIS.API.csproj" />
+  <Project Path="AMIS.Tests/AMIS.Tests.csproj" />
+</Solution>

@@ -1,0 +1,11 @@
+.env
+**/bin/
+**/obj/
+**/node_modules/
+**/.next/
+*.user
+*.log
+
+docs/*_PLAN.md
+frontend/AGENTS.md
+frontend/CLAUDE.md

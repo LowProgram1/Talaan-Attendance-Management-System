@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  <meta name="description" content="{{ site.description | escape }}">
+  <style>
+    :root { color-scheme: light; font: 16px/1.65 system-ui, sans-serif; color: #19324c; background: #f7f9fc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    a { color: #1764ab; }
+    a:hover { color: #0d4279; }
+    .top { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1.4rem; color: white; background: #123a70; box-shadow: 0 2px 12px #10253f25; }
+    .top a { color: white; }
+    .shell { max-width: 1500px; margin: auto; display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 1.4rem; padding: 1.4rem; }
+    .side { align-self: start; position: sticky; top: 4.3rem; display: grid; gap: .45rem; padding: 1rem; background: white; border: 1px solid #dce5ef; border-radius: 12px; }
+    .side a { text-decoration: none; padding: .28rem .45rem; border-radius: 5px; }
+    .side a:hover { background: #edf4fc; }
+    main { min-width: 0; padding: clamp(1rem, 3vw, 2.5rem); background: white; border: 1px solid #dce5ef; border-radius: 12px; }
+    h1, h2, h3 { color: #102f55; line-height: 1.25; scroll-margin-top: 5rem; }
+    h2 { border-top: 1px solid #e3eaf2; padding-top: 1.6rem; margin-top: 2.5rem; }
+    img { max-width: 100%; height: auto; border: 1px solid #dce5ef; border-radius: 8px; }
+    table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1rem 0 1.6rem; }
+    th, td { border: 1px solid #dce5ef; padding: .55rem .7rem; vertical-align: top; }
+    th { background: #edf4fc; }
+    tr:nth-child(even) { background: #fbfcfe; }
+    code { background: #f1f4f8; border-radius: 3px; padding: .1rem .25rem; }
+    pre { overflow-x: auto; padding: 1rem; background: #f1f4f8; border-radius: 8px; }
+    pre code { padding: 0; }
+    details { border: 1px solid #dce5ef; border-radius: 8px; padding: .7rem 1rem; margin: .7rem 0; }
+    summary { cursor: pointer; font-weight: 650; }
+    @media (max-width: 800px) { .shell { display: block; padding: .5rem; } .side { position: static; display: flex; flex-wrap: wrap; margin-bottom: .7rem; } main { padding: 1rem; } .top { position: static; } }
+  </style>
+</head>
+<body>
+  <header class="top"><strong>Talaan Documentation</strong><a href="#contents">Jump to contents</a></header>
+  <div class="shell">
+    <nav class="side" aria-label="Documentation sections">
+      <strong>Navigate</strong>
+      <a href="#run-and-configuration">Run and configuration</a>
+      <a href="#technology-and-specifications">Technology</a>
+      <a href="#modules-features-and-functions">Modules</a>
+      <a href="#administrator-guide">Administrator guide</a>
+      <a href="#teacher-guide">Teacher guide</a>
+      <a href="#role-based-access-control-and-least-privilege">Access control</a>
+      <a href="#database-structure">Database</a>
+      <a href="#entity-relationship-diagram">Diagrams</a>
+      <a href="#verification-record">Verification</a>
+    </nav>
+    <main>{{ content }}</main>
+  </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    document.querySelectorAll('pre > code.language-mermaid').forEach(code => {
+      const diagram = document.createElement('div');
+      diagram.className = 'mermaid';
+      diagram.textContent = code.textContent;
+      code.parentElement.replaceWith(diagram);
+    });
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'strict' });
+  </script>
+</body>
+</html>
