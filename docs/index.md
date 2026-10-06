@@ -20,7 +20,7 @@ This guide is readable on GitHub and has a [GitHub repository copy](https://gith
 
 From the repository root, copy `.env.example` to the ignored `.env`, set `POSTGRES_PASSWORD`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD`, then run `docker compose up -d --build`. Open <http://localhost:3000>; health is available through the same origin at <http://localhost:3000/api/health>. The administrator account is seeded from `ADMIN_EMAIL` and `ADMIN_PASSWORD` on first startup. Changing those values later does not change an existing account's password. Email settings (`EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_SSL`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`, `EMAIL_FROM`) drive staff invitations, password codes, and guardian attendance notices. Never commit `.env` or real credentials.
 
-The browser calls `/api` on the same origin as the web app. Next.js forwards those requests to the ASP.NET Core API inside Docker; direct API access on `localhost:5080` remains available for local development. `PUBLIC_FRONTEND_URL` in `.env` permits the current HTTPS testing origin for API writes. It must match the temporary tunnel URL exactly and should be changed or cleared when that URL changes.
+The browser calls `/api` on the same origin as the web app. Next.js forwards those requests to the ASP.NET Core API inside Docker; direct API access on `localhost:5080` remains available for local development. `PUBLIC_FRONTEND_URL` in `.env` permits the current HTTPS testing origin for API writes and supplies the base URL in new staff activation emails. When it is empty, activation emails use the local `FRONTEND_URL`. It must match the temporary tunnel URL exactly and should be changed or cleared when that URL changes.
 
 ### Cloudflare Quick Tunnel for group testing
 
@@ -324,6 +324,8 @@ AMIS/
 Generated files, dependencies, test projects, local secrets, and documentation screenshots are excluded from this production structure.
 
 ## Verification record
+
+On 2026-10-06, staff activation links were corrected to prefer `PUBLIC_FRONTEND_URL` when it is configured. A temporary teacher invitation was sent to local Mailpit from a separate backend with the same public URL configuration. Its activation email contained the Cloudflare HTTPS `/activate` link and no localhost activation link. The temporary account, token, test backend, and Mailpit message were removed; the normal backend was rebuilt and restarted.
 
 Earlier on 2026-10-06, `docker compose up -d --build` started all four services and `GET /api/health` returned `{"status":"ok"}`. Administrator API login succeeded using the existing ignored `.env` credentials. Local demonstration records were added: Elena Navarro (Teacher), Rosario Villanueva (Guardian email contact), Miguel Villanueva (`STD-0000006`), Sofia Villanueva (`STD-0000007`), and Elena's Science schedule. Sofia was entered and saved in the browser. Science attendance for 2026-10-06 was submitted twice as the roster grew from four to five students; revision 2 contains four Present and one Late. The report displays Miguel with one Late and Sofia with one Present, and the alert log shows a delivered Late notice to Rosario. At that time, invitation and alert mail was routed temporarily to local Mailpit; the backend's original `.env` email configuration was restored afterward. Guardian invitation delivery has since been removed.
 

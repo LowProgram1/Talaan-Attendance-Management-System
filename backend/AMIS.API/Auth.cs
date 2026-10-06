@@ -159,7 +159,10 @@ public static class AuthEndpoints {
             await users.AddToRoleAsync(user, role);
             var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             db.OneTimeTokens.Add(new OneTimeToken { UserId = user.Id, Purpose = "activation", Hash = HashToken(token), ExpiresAt = DateTimeOffset.UtcNow.AddDays(2) }); await db.SaveChangesAsync();
-            var link = $"{config["FRONTEND_URL"] ?? "http://localhost:3000"}/activate?email={Uri.EscapeDataString(user.Email!)}&token={token}";
+            var frontendUrl = string.IsNullOrWhiteSpace(config["PUBLIC_FRONTEND_URL"])
+                ? config["FRONTEND_URL"] ?? "http://localhost:3000"
+                : config["PUBLIC_FRONTEND_URL"]!;
+            var link = $"{frontendUrl.TrimEnd('/')}/activate?email={Uri.EscapeDataString(user.Email!)}&token={token}";
             await email.SendAsync(user.Email!, "Activate your Talaan account", $"<p>Welcome, {WebUtility.HtmlEncode(user.FullName)}. Set your password to activate your account.</p><p><a href='{link}' style='background:#2365ae;color:white;padding:12px 18px;border-radius:8px;text-decoration:none'>Activate account</a></p><p>This link expires in 48 hours.</p>");
             return Results.Created($"/api/users/{user.Id}", new { user.Id, user.FullName, user.Email, role });
         }).RequireAuthorization("Administrator");
