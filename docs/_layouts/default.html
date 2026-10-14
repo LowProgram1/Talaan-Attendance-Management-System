@@ -11,6 +11,9 @@
     body { margin: 0; }
     a { color: #1764ab; }
     a:hover { color: #0d4279; }
+    a:focus-visible, [tabindex]:focus-visible { outline: 3px solid #1764ab; outline-offset: 3px; }
+    .skip { position: absolute; left: 1rem; top: -5rem; z-index: 3; background: white; padding: .5rem 1rem; }
+    .skip:focus { top: .5rem; }
     .top { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1.4rem; color: white; background: #123a70; box-shadow: 0 2px 12px #10253f25; }
     .top a { color: white; }
     .shell { max-width: 1500px; margin: auto; display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 1.4rem; padding: 1.4rem; }
@@ -28,37 +31,46 @@
     code { background: #f1f4f8; border-radius: 3px; padding: .1rem .25rem; }
     pre { overflow-x: auto; padding: 1rem; background: #f1f4f8; border-radius: 8px; }
     pre code { padding: 0; }
+    .diagram { overflow-x: auto; margin: 1.5rem 0; padding: 1rem; border: 1px solid #dce5ef; border-radius: 8px; }
+    .diagram svg { min-width: 900px; }
+    p, li, td { overflow-wrap: anywhere; }
     details { border: 1px solid #dce5ef; border-radius: 8px; padding: .7rem 1rem; margin: .7rem 0; }
     summary { cursor: pointer; font-weight: 650; }
     @media (max-width: 800px) { .shell { display: block; padding: .5rem; } .side { position: static; display: flex; flex-wrap: wrap; margin-bottom: .7rem; } main { padding: 1rem; } .top { position: static; } }
   </style>
 </head>
 <body>
+  <a class="skip" href="#main-content">Skip to documentation</a>
   <header class="top"><strong>Talaan Documentation</strong><a href="#contents">Jump to contents</a></header>
   <div class="shell">
     <nav class="side" aria-label="Documentation sections">
       <strong>Navigate</strong>
-      <a href="#run-and-configuration">Run and configuration</a>
-      <a href="#technology-and-specifications">Technology</a>
-      <a href="#modules-features-and-functions">Modules</a>
-      <a href="#administrator-guide">Administrator guide</a>
-      <a href="#teacher-guide">Teacher guide</a>
-      <a href="#role-based-access-control-and-least-privilege">Access control</a>
-      <a href="#database-structure">Database</a>
-      <a href="#entity-relationship-diagram">Diagrams</a>
-      <a href="#verification-record">Verification</a>
+      <a href="#introduction-and-problem-statement">Introduction and problems</a>
+      <a href="#objectives-and-target-users">Objectives and users</a>
+      <a href="#system-features-and-technology-stack">Features and technology</a>
+      <a href="#database-structure-relational-entity-model-and-schema">Database and relationships</a>
+      <a href="#conclusion">Conclusion</a>
+      <a href="#future-improvements">Future improvements</a>
+      <a href="#references-and-credits">References and credits</a>
+      <a href="https://github.com/LowProgram1/Talaan-Attendance-Management-System/blob/main/DOCUMENTATION.md">View Markdown on GitHub</a>
     </nav>
-    <main>{{ content }}</main>
+    <main id="main-content" tabindex="-1">{{ content }}</main>
   </div>
   <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-    document.querySelectorAll('pre > code.language-mermaid').forEach(code => {
+    document.querySelectorAll('pre > code.language-mermaid, .language-mermaid pre > code').forEach(code => {
+      const frame = document.createElement('div');
+      frame.className = 'diagram';
+      frame.tabIndex = 0;
+      frame.setAttribute('role', 'region');
+      frame.setAttribute('aria-label', 'Database relationship diagram; scroll horizontally to explore');
       const diagram = document.createElement('div');
       diagram.className = 'mermaid';
       diagram.textContent = code.textContent;
-      code.parentElement.replaceWith(diagram);
+      frame.appendChild(diagram);
+      code.parentElement.replaceWith(frame);
     });
-    mermaid.initialize({ startOnLoad: true, securityLevel: 'strict' });
+    mermaid.initialize({ startOnLoad: true, securityLevel: 'strict', er: { useMaxWidth: false } });
   </script>
 </body>
 </html>

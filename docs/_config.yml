@@ -1,5 +1,9 @@
 title: Talaan Documentation
-description: Attendance Management Information System technical and user guide
+description: Talaan attendance management system overview, implemented features, database relationships, and future improvements
 markdown: kramdown
 plugins:
   - jekyll-seo-tag
+exclude:
+  - build_site.py
+  - plans
+  - superpowers
