@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { post, put, request } from '@/lib/api';
 import Pagination, { PAGE_SIZE } from './pagination';
 
@@ -10,6 +10,7 @@ type UserRow = {
   fullName: string;
   email: string;
   role: string;
+  roles?: string[];
   emailConfirmed: boolean;
   children: number;
 };
@@ -22,6 +23,8 @@ export default function UsersView({ currentUserId }: { currentUserId: string }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('All');
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [busy, setBusy] = useState(false);
@@ -90,24 +93,28 @@ export default function UsersView({ currentUserId }: { currentUserId: string }) 
     }
   }
 
-  const currentPage = Math.min(page, Math.max(1, Math.ceil(users.length / PAGE_SIZE)));
-  const visible = users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  const filtered = users.filter(user => {
+    const term = search.trim().toLocaleLowerCase();
+    return (!term || user.fullName.toLocaleLowerCase().includes(term) || user.email.toLocaleLowerCase().includes(term)) && (roleFilter === 'All' || user.role === roleFilter || user.roles?.includes(roleFilter));
+  });
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / PAGE_SIZE)));
+  const visible = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const self = editing !== null && editing !== 'new' && editing.id === currentUserId;
   const guardian = editing !== null && editing !== 'new' && editing.role === 'Guardian';
 
   return <>
     <div className="section-toolbar">
-      <p className="muted">Guardian email contacts appear automatically when students are enrolled. They do not sign in.</p>
-      <button className="btn btn-primary" onClick={openNew}><Plus size={18}/> Add staff</button>
+      <div className="class-filters user-filters"><div className="search-box"><Search size={18}/><input className="field" type="search" value={search} onChange={event=>{setSearch(event.target.value);setPage(1)}} placeholder="Search name or email…" aria-label="Search users by name or email"/></div><select className="field" style={{maxWidth:220}} aria-label="Filter users by role" value={roleFilter} onChange={event=>{setRoleFilter(event.target.value);setPage(1)}}><option value="All">All roles</option><option value="Administrator">Administrator</option><option value="Teacher">Teacher</option><option value="Guardian">Guardian</option></select><button className="btn btn-primary" onClick={openNew}><Plus size={18}/> Add staff</button></div>
     </div>
     {error && !editing && <p className="error" role="alert">{error}</p>}
     <div className="card table-wrap">
       {loading ? <div className="skeleton-table" aria-label="Loading users"><div className="skeleton-line"/><div className="skeleton-line"/><div className="skeleton-line"/></div> :
-        users.length ? <table className="table"><thead><tr>{['Name', 'Email', 'Role', 'Children', 'Status', 'Actions'].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
-          {visible.map(user => <tr key={user.id}>
-            <td><strong>{user.fullName}</strong></td><td>{user.email}</td><td>{user.role}</td>
-            <td>{user.role === 'Guardian' ? `${user.children} ${user.children === 1 ? 'child' : 'children'}` : '—'}</td>
-            <td style={{color:user.role === 'Guardian' ? 'var(--muted)' : user.emailConfirmed ? '#168456' : 'var(--orange)'}}>{user.role === 'Guardian' ? 'Email contact' : user.emailConfirmed ? 'Active' : 'Pending activation'}</td>
+        filtered.length ? <table className="table"><thead><tr>{['#', 'Name', 'Email', 'Role', 'Children', 'Status', 'Actions'].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
+          {visible.map((user, index) => <tr key={user.id}>
+            <td>{(currentPage - 1) * PAGE_SIZE + index + 1}</td>
+            <td><strong>{user.fullName}</strong></td><td>{user.email}</td><td>{user.roles?.join(', ')||user.role}</td>
+            <td>{user.roles?.includes('Guardian') || user.role === 'Guardian' ? `${user.children} ${user.children === 1 ? 'child' : 'children'}` : '—'}</td>
+            <td style={{color:user.roles?.includes('Guardian') || user.role === 'Guardian' ? 'var(--muted)' : user.emailConfirmed ? '#168456' : 'var(--orange)'}}>{user.roles?.includes('Guardian') || user.role === 'Guardian' ? 'Email contact' : user.emailConfirmed ? 'Active' : 'Pending activation'}</td>
             <td><div className="row-actions">
               <button className="icon-button" title="Edit user" aria-label={`Edit ${user.fullName}`} onClick={() => openEdit(user)}><Pencil size={16}/></button>
               <button className="icon-button" title={user.id === currentUserId ? 'Cannot delete your own account' : 'Delete user'} aria-label={`Delete ${user.fullName}`} disabled={busy || user.id === currentUserId} onClick={() => void remove(user)}><Trash2 size={16}/></button>
@@ -115,7 +122,7 @@ export default function UsersView({ currentUserId }: { currentUserId: string }) 
           </tr>)}
         </tbody></table> : <div className="empty">No users found.</div>}
     </div>
-    <Pagination page={currentPage} total={users.length} onPageChange={setPage}/>
+    <Pagination page={currentPage} total={filtered.length} onPageChange={setPage}/>
     {editing && <div className="modal-backdrop" onMouseDown={() => !busy && setEditing(null)}><div className="modal" role="dialog" aria-modal="true" aria-label={editing === 'new' ? 'Add staff' : 'Edit user'} onMouseDown={event => event.stopPropagation()}>
       <div className="modal-head"><h2 className="section-title">{editing === 'new' ? 'Add staff' : 'Edit user'}</h2><button className="icon-button" aria-label="Close" onClick={() => setEditing(null)}>×</button></div>
       <form onSubmit={save}><div className="form-grid">

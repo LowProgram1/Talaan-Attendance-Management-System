@@ -35,7 +35,7 @@ public static class AttendanceEndpoints {
             var revision = await db.AttendanceSubmissions
                 .Where(s => s.ScheduleId == scheduleId && s.Date == day)
                 .Select(s => (int?)s.Revision).MaxAsync() ?? 0;
-            var roster = await db.Students.Where(s => s.SectionId == schedule.SectionId && !s.IsDeleted)
+            var roster = await db.Students.Where(s => (s.SectionId == schedule.SectionId && !s.IsDeleted) || db.Attendance.Any(a => a.StudentId == s.Id && a.ScheduleId == scheduleId && a.Date == day))
                 .OrderBy(s => s.LastName).ThenBy(s => s.FirstName)
                 .Select(s => new {
                     s.Id, s.StudentNumber, s.FirstName, s.LastName,
@@ -76,7 +76,7 @@ public static class AttendanceEndpoints {
                     : Results.Conflict(new { message = "Submission key was already used." });
 
             var roster = await db.Students.Include(s => s.Guardians).ThenInclude(g => g.Guardian)
-                .Where(s => s.SectionId == schedule.SectionId && !s.IsDeleted)
+                .Where(s => (s.SectionId == schedule.SectionId && !s.IsDeleted) || db.Attendance.Any(a => a.StudentId == s.Id && a.ScheduleId == scheduleId && a.Date == input.Date))
                 .OrderBy(s => s.LastName).ThenBy(s => s.FirstName).ToListAsync();
             if (roster.Count != input.Records.Count ||
                 !roster.Select(s => s.Id).Order().SequenceEqual(input.Records.Select(r => r.StudentId).Order()))

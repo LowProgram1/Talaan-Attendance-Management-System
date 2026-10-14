@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var seedDemoData = args.Contains("--seed-demo-data", StringComparer.Ordinal);
+if (seedDemoData) builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
 var connection = builder.Configuration.GetConnectionString("Default") ?? throw new InvalidOperationException("ConnectionStrings:Default is required");
 builder.Services.AddDbContext<AppDb>(o => o.UseNpgsql(connection));
 builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>(o => {
@@ -58,10 +60,19 @@ using (var scope = app.Services.CreateScope()) {
         await users.AddToRoleAsync(admin, "Administrator");
     }
 }
+if (seedDemoData) {
+    await using var scope = app.Services.CreateAsyncScope();
+    await DemoDataFactory.SeedAsync(
+        scope.ServiceProvider.GetRequiredService<AppDb>(),
+        scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>(),
+        app.Configuration);
+    return;
+}
 app.MapGet("/api/health", () => Results.Ok(new { status = "ok" }));
 app.MapAuth();
 app.MapAcademics();
 app.MapAttendance();
 app.MapSchool();
+app.MapStudents();
 app.MapImport();
 app.Run();

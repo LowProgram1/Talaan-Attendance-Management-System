@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Mail;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
@@ -9,7 +10,7 @@ namespace AMIS.API;
 
 public sealed record LoginRequest(string Email, string Password, bool RememberMe);
 public sealed record EmailRequest(string Email);
-public sealed record ResetRequest(string Email, string Otp, string Password);
+public sealed record ResetRequest(string Email, string Token, string Password, string ConfirmPassword);
 public sealed record ActivationRequest(string Email, string Token, string Password);
 public sealed record UserRequest(string FullName, string Email, string? Role);
 public sealed record UserEditRequest(string FullName, string? Email, string? Role);
@@ -20,9 +21,16 @@ public sealed class EmailService(IConfiguration config) {
     public async Task SendAsync(string to, string subject, string body) {
         var host = config["EMAIL_HOST"] ?? throw new InvalidOperationException("EMAIL_HOST is required");
         using var message = new MailMessage(config["EMAIL_FROM"] ?? config["EMAIL_USERNAME"]!, to) { Subject = subject, Body = $"<html><body style='font-family:Arial,sans-serif;color:#102743;background:#f6f8fb;padding:28px'><div style='max-width:560px;margin:auto;background:white;border-radius:14px;padding:30px'><h1 style='color:#123a70'>Talaan</h1>{body}<p style='margin-top:30px;color:#65758b;font-size:13px'>Attendance Management Information System</p></div></body></html>", IsBodyHtml = true };
-        using var client = new SmtpClient(host, int.Parse(config["EMAIL_PORT"] ?? "587")) { EnableSsl = bool.Parse(config["EMAIL_USE_SSL"] ?? "true") };
-        if (!string.IsNullOrWhiteSpace(config["EMAIL_USERNAME"])) client.Credentials = new NetworkCredential(config["EMAIL_USERNAME"], config["EMAIL_PASSWORD"]);
-        await client.SendMailAsync(message);
+        for (var attempt = 0; ; attempt++) {
+            using var client = new SmtpClient(host, int.Parse(config["EMAIL_PORT"] ?? "587")) { EnableSsl = bool.Parse(config["EMAIL_USE_SSL"] ?? "true") };
+            if (!string.IsNullOrWhiteSpace(config["EMAIL_USERNAME"])) client.Credentials = new NetworkCredential(config["EMAIL_USERNAME"], config["EMAIL_PASSWORD"]);
+            try { await client.SendMailAsync(message); return; }
+            catch (SmtpException ex) when (attempt < 2 && ex.InnerException is SocketException socket &&
+                socket.SocketErrorCode is SocketError.HostNotFound or SocketError.TryAgain or SocketError.NoData) {
+                // DNS failed before connecting, so retrying cannot duplicate a delivered message.
+                await Task.Delay(TimeSpan.FromSeconds(attempt + 1));
+            }
+        }
     }
 }
 
@@ -110,32 +118,64 @@ public static class AuthEndpoints {
             catch (Exception ex) { logger.LogError(ex, "Test notification delivery failed"); return Results.Problem("The email service could not send the test notification.", statusCode: 503); }
             return Results.Ok(new { message = "Test notification accepted by the email server." });
         }).RequireAuthorization("Administrator");
-        api.MapPost("/forgot", async (EmailRequest input, UserManager<AppUser> users, AppDb db, EmailService email, ILogger<EmailService> logger) => {
-            var user = await users.FindByEmailAsync(input.Email.Trim());
+        api.MapPost("/forgot", async (EmailRequest input, UserManager<AppUser> users, AppDb db,
+            EmailService email, IConfiguration config, ILogger<EmailService> logger) => {
+            var user = await users.FindByEmailAsync(input.Email?.Trim() ?? "");
             if (user is not null && user.IsActive && user.EmailConfirmed && await IsStaff(users, user)) {
-                var recent = await db.OneTimeTokens.AnyAsync(x => x.UserId == user.Id && x.Purpose == "reset" && x.ExpiresAt > DateTimeOffset.UtcNow.AddMinutes(8) && !x.Used);
+                var now = DateTimeOffset.UtcNow;
+                var recent = await db.OneTimeTokens.AnyAsync(x => x.UserId == user.Id && x.Purpose == "reset-link" &&
+                    x.ExpiresAt > now.AddMinutes(28) && !x.Used);
                 if (!recent) {
-                    var otp = RandomNumberGenerator.GetInt32(0, 1000000).ToString("D6");
-                    db.OneTimeTokens.Add(new OneTimeToken { UserId = user.Id, Purpose = "reset", Hash = HashToken(otp), ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10) });
+                    var secret = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
+                    var pending = await db.OneTimeTokens.Where(x => x.UserId == user.Id &&
+                        (x.Purpose == "reset-link" || x.Purpose == "reset") && !x.Used).ToListAsync();
+                    foreach (var item in pending) item.Used = true;
+                    var token = new OneTimeToken { UserId = user.Id, Purpose = "reset-link", Hash = HashToken(secret),
+                        ExpiresAt = now.AddMinutes(30) };
+                    db.OneTimeTokens.Add(token);
                     await db.SaveChangesAsync();
-                    try { await email.SendAsync(user.Email!, "Password reset code", $"<p>Use this six-digit code to reset your password. It expires in 10 minutes.</p><h2>{otp}</h2><p>If you did not request this, ignore this message.</p>"); }
-                    catch (Exception ex) { logger.LogError(ex, "Password reset email delivery failed"); var pending = await db.OneTimeTokens.Where(x => x.UserId == user.Id && x.Purpose == "reset" && !x.Used).OrderByDescending(x => x.ExpiresAt).FirstAsync(); pending.Used = true; await db.SaveChangesAsync(); }
+                    var frontendUrl = string.IsNullOrWhiteSpace(config["PUBLIC_FRONTEND_URL"])
+                        ? config["FRONTEND_URL"] ?? "http://localhost:3000" : config["PUBLIC_FRONTEND_URL"]!;
+                    var link = WebUtility.HtmlEncode($"{frontendUrl.TrimEnd('/')}/reset?email={Uri.EscapeDataString(user.Email!)}&token={secret}");
+                    try {
+                        await email.SendAsync(user.Email!, "Reset your Talaan password",
+                            $"<h2>Choose a new password</h2><p>We received a request to reset your Talaan password.</p><p style='margin:28px 0'><a href='{link}' style='background:#2365ae;color:white;padding:12px 20px;border-radius:8px;text-decoration:none'>Reset password</a></p><p>This link expires in 30 minutes and can be used once.</p><p>If the button does not open, copy this link into your browser:</p><p style='word-break:break-all'>{link}</p><p>If you did not request a reset, you can ignore this email. Your password will remain unchanged.</p>");
+                    } catch (Exception ex) {
+                        logger.LogError(ex, "Password reset email delivery failed");
+                        token.Used = true;
+                        await db.SaveChangesAsync();
+                        return Results.Json(new { message = "The email service is temporarily unavailable. Please try requesting a new reset link in a moment." }, statusCode: 503);
+                    }
                 }
             }
-            return Results.Ok(new { message = "If the account exists, a reset code has been sent." });
+            return Results.Ok(new { message = "If an eligible account exists, a password reset link has been sent." });
         });
         api.MapPost("/reset", async (ResetRequest input, UserManager<AppUser> users, AppDb db) => {
-            if (!Strong(input.Password)) return Results.BadRequest(new { message = "Password does not meet strength requirements." });
-            var user = await users.FindByEmailAsync(input.Email.Trim());
-            if (user is null || !user.IsActive || !await IsStaff(users, user)) return Results.BadRequest(new { message = "Invalid or expired code." });
-            var token = await db.OneTimeTokens.Where(x => x.UserId == user.Id && x.Purpose == "reset" && !x.Used).OrderByDescending(x => x.ExpiresAt).FirstOrDefaultAsync();
-            if (token is null || token.ExpiresAt < DateTimeOffset.UtcNow || token.Attempts >= 5) return Results.BadRequest(new { message = "Invalid or expired code." });
-            token.Attempts++;
-            if (input.Otp.Length != 6 || !input.Otp.All(char.IsDigit) || !VerifyToken(token.Hash, input.Otp)) { await db.SaveChangesAsync(); return Results.BadRequest(new { message = "Invalid or expired code." }); }
+            if (string.IsNullOrEmpty(input.Password) || !Strong(input.Password))
+                return Results.BadRequest(new { message = "Password does not meet strength requirements." });
+            if (input.Password != input.ConfirmPassword)
+                return Results.BadRequest(new { message = "Passwords do not match." });
+            const string invalid = "This reset link is invalid or has expired. Request a new link.";
+            if (input.Token is null || input.Token.Length != 64 || !input.Token.All(Uri.IsHexDigit))
+                return Results.BadRequest(new { message = invalid });
+            var user = await users.FindByEmailAsync(input.Email?.Trim() ?? "");
+            if (user is null || !user.IsActive || !user.EmailConfirmed || !await IsStaff(users, user))
+                return Results.BadRequest(new { message = invalid });
+            var token = await db.OneTimeTokens.AsNoTracking().Where(x => x.UserId == user.Id && x.Purpose == "reset-link" && !x.Used)
+                .OrderByDescending(x => x.ExpiresAt).FirstOrDefaultAsync();
+            if (token is null || token.ExpiresAt <= DateTimeOffset.UtcNow || !VerifyToken(token.Hash, input.Token))
+                return Results.BadRequest(new { message = invalid });
+            await using var transaction = await db.Database.BeginTransactionAsync();
+            var claimed = await db.OneTimeTokens.Where(x => x.Id == token.Id && !x.Used && x.ExpiresAt > DateTimeOffset.UtcNow)
+                .ExecuteUpdateAsync(set => set.SetProperty(x => x.Used, true));
+            if (claimed != 1) return Results.BadRequest(new { message = invalid });
             var result = await users.ResetPasswordAsync(user, await users.GeneratePasswordResetTokenAsync(user), input.Password);
             if (!result.Succeeded) return Results.BadRequest(new { message = string.Join(" ", result.Errors.Select(e => e.Description)) });
-            token.Used = true; await db.SaveChangesAsync(); await users.UpdateSecurityStampAsync(user);
-            return Results.Ok(new { message = "Password updated." });
+            await db.OneTimeTokens.Where(x => x.UserId == user.Id && !x.Used &&
+                (x.Purpose == "reset-link" || x.Purpose == "reset" || x.Purpose == "change-password"))
+                .ExecuteUpdateAsync(set => set.SetProperty(x => x.Used, true));
+            await transaction.CommitAsync();
+            return Results.Ok(new { message = "Password updated. Sign in with your new password." });
         });
         api.MapPost("/activate", async (ActivationRequest input, UserManager<AppUser> users, AppDb db, SignInManager<AppUser> signIn) => {
             if (!Strong(input.Password)) return Results.BadRequest(new { message = "Password does not meet strength requirements." });

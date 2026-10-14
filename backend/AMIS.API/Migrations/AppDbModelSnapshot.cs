@@ -325,6 +325,9 @@ namespace AMIS.API.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<int?>("DayOfWeek")
+                        .HasColumnType("integer");
+
                     b.Property<TimeOnly>("EndsAt")
                         .HasColumnType("time without time zone");
 
@@ -408,7 +411,7 @@ namespace AMIS.API.Migrations
                     b.Property<string>("MiddleName")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("SectionId")
+                    b.Property<Guid?>("SectionId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("StudentNumber")
@@ -667,8 +670,7 @@ namespace AMIS.API.Migrations
                     b.HasOne("AMIS.API.Section", "Section")
                         .WithMany("Students")
                         .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Section");
                 });

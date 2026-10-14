@@ -29,3 +29,7 @@ CSV import columns are `firstName,lastName,sectionId,guardianName,guardianEmail`
 ## Local development
 
 Run PostgreSQL with Compose, then start the API with `ConnectionStrings__Default` configured and `dotnet run --project backend/AMIS.API`. Start the frontend with `cd frontend && npm install && npm run dev`. The browser uses `/api` on the web origin; `API_PROXY_TARGET` defaults to `http://localhost:5080` for local development.
+
+To populate the local database with demo records, run `docker compose run --rm backend --seed-demo-data`. This command creates Filipino-themed sections for Grades 1–6, 10–15 students in each section, teacher and guardian accounts, and three-digit room numbers. Grade 1 / Rizal is assigned to `jerald.kasim@dict.gov.ph` and kept at 20 active students; it also links `jerald11kasim@gmail.com` as a guardian and creates Science, Math, English, Filipino, and Values classes Monday through Friday from 8:00–10:00 AM. The separate `jerald.kasim@gmail.com` alert-test guardian remains linked to a Grade 1 student. The factory is safe to rerun without duplicating these records and prints activation links for newly created teacher accounts. Use only with a local/demo database.
+
+The demo seed also assigns every active teacher who has no active schedule a 2-hour weekday class in an available section, enabling attendance entry for all active teachers.

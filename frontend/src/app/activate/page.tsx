@@ -6,7 +6,7 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { post, request, Session } from '@/lib/api';
 import { passwordValid } from '@/lib/password';
-import { PasswordHint } from '../forgot/page';
+import { PasswordHint } from '@/components/password-hint';
 
 function Activation() {
   const router = useRouter();

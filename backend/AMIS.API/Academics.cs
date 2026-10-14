@@ -19,6 +19,7 @@ public static class AcademicEndpoints {
     private static async Task<bool> ScheduleOverlap(AppDb db, ScheduleInput input, Guid? except = null) =>
         await db.Schedules.AnyAsync(s => s.Id != except && !s.IsArchived &&
             (s.SectionId == input.SectionId || s.TeacherId == input.TeacherId) &&
+            (s.DayOfWeek == null || input.DayOfWeek == null || s.DayOfWeek == input.DayOfWeek) &&
             s.StartsAt < input.EndsAt && input.StartsAt < s.EndsAt);
 
     public static void MapAcademics(this WebApplication app) {
@@ -144,18 +145,18 @@ public static class AcademicEndpoints {
                     (admin || s.TeacherId == id))
                 .OrderBy(s => s.Section.GradeLevel.Name).ThenBy(s => s.Section.Name).ThenBy(s => s.StartsAt)
                 .Select(s => new {
-                    s.Id, s.Subject, s.SectionId, s.TeacherId, s.StartsAt, s.EndsAt, s.IsArchived,
+                    s.Id, s.Subject, s.SectionId, s.TeacherId, s.StartsAt, s.EndsAt, s.DayOfWeek, s.IsArchived,
                     section = s.Section.Name, grade = s.Section.GradeLevel.Name,
                     teacher = s.Teacher.FullName, room = s.Section.Room
                 }).ToListAsync();
         }).RequireAuthorization("Staff");
 
         api.MapPost("/schedules", async (ScheduleInput input, AppDb db, UserManager<AppUser> users) => {
-            if (!ValidName(input.Subject) || input.StartsAt >= input.EndsAt) return Results.BadRequest(new { message = "Enter a subject and a valid time range." });
+            if (!ValidName(input.Subject) || input.StartsAt >= input.EndsAt || input.DayOfWeek is not null && !Enum.IsDefined(input.DayOfWeek.Value)) return Results.BadRequest(new { message = "Enter a subject, valid weekday, and valid time range." });
             if (!await db.Sections.AnyAsync(s => s.Id == input.SectionId && !s.IsArchived && !s.GradeLevel.IsArchived)) return Results.BadRequest(new { message = "Select an active section." });
             if (!await ValidTeacher(input.TeacherId, users)) return Results.BadRequest(new { message = "Assigned user must be a teacher." });
             if (await ScheduleOverlap(db, input)) return Results.Conflict(new { message = "This section or teacher already has an overlapping schedule." });
-            var schedule = new Schedule { SectionId = input.SectionId, TeacherId = input.TeacherId, Subject = input.Subject.Trim(), StartsAt = input.StartsAt, EndsAt = input.EndsAt };
+            var schedule = new Schedule { SectionId = input.SectionId, TeacherId = input.TeacherId, Subject = input.Subject.Trim(), StartsAt = input.StartsAt, EndsAt = input.EndsAt, DayOfWeek = input.DayOfWeek };
             db.Schedules.Add(schedule);
             await db.SaveChangesAsync();
             return Results.Created($"/api/schedules/{schedule.Id}", new { schedule.Id });
@@ -164,11 +165,11 @@ public static class AcademicEndpoints {
         api.MapPut("/schedules/{id:guid}", async (Guid id, ScheduleInput input, AppDb db, UserManager<AppUser> users) => {
             var schedule = await db.Schedules.FindAsync(id);
             if (schedule is null) return Results.NotFound();
-            if (!ValidName(input.Subject) || input.StartsAt >= input.EndsAt) return Results.BadRequest(new { message = "Enter a subject and a valid time range." });
+            if (!ValidName(input.Subject) || input.StartsAt >= input.EndsAt || input.DayOfWeek is not null && !Enum.IsDefined(input.DayOfWeek.Value)) return Results.BadRequest(new { message = "Enter a subject, valid weekday, and valid time range." });
             if (!await db.Sections.AnyAsync(s => s.Id == input.SectionId && !s.IsArchived && !s.GradeLevel.IsArchived)) return Results.BadRequest(new { message = "Select an active section." });
             if (!await ValidTeacher(input.TeacherId, users)) return Results.BadRequest(new { message = "Assigned user must be a teacher." });
             var changed = schedule.SectionId != input.SectionId || schedule.TeacherId != input.TeacherId ||
-                schedule.Subject != input.Subject.Trim() || schedule.StartsAt != input.StartsAt || schedule.EndsAt != input.EndsAt;
+                schedule.Subject != input.Subject.Trim() || schedule.StartsAt != input.StartsAt || schedule.EndsAt != input.EndsAt || schedule.DayOfWeek != input.DayOfWeek;
             if (changed && (await db.Attendance.AnyAsync(a => a.ScheduleId == id) || await db.AttendanceSubmissions.AnyAsync(a => a.ScheduleId == id)))
                 return Results.Conflict(new { message = "A schedule with attendance history is fixed. Archive it and create a new schedule." });
             if (await ScheduleOverlap(db, input, id)) return Results.Conflict(new { message = "This section or teacher already has an overlapping schedule." });
@@ -177,6 +178,7 @@ public static class AcademicEndpoints {
             schedule.Subject = input.Subject.Trim();
             schedule.StartsAt = input.StartsAt;
             schedule.EndsAt = input.EndsAt;
+            schedule.DayOfWeek = input.DayOfWeek;
             await db.SaveChangesAsync();
             return Results.Ok(new { schedule.Id });
         }).RequireAuthorization("Administrator");
@@ -194,7 +196,7 @@ public static class AcademicEndpoints {
             var schedule = await db.Schedules.Include(s => s.Section).ThenInclude(s => s.GradeLevel).FirstOrDefaultAsync(s => s.Id == id);
             if (schedule is null) return Results.NotFound();
             if (schedule.Section.IsArchived || schedule.Section.GradeLevel.IsArchived) return Results.Conflict(new { message = "Restore the grade and section first." });
-            var input = new ScheduleInput(schedule.SectionId, schedule.TeacherId, schedule.Subject, schedule.StartsAt, schedule.EndsAt);
+            var input = new ScheduleInput(schedule.SectionId, schedule.TeacherId, schedule.Subject, schedule.StartsAt, schedule.EndsAt, schedule.DayOfWeek);
             if (await ScheduleOverlap(db, input, id)) return Results.Conflict(new { message = "This section or teacher has an overlapping active schedule." });
             schedule.IsArchived = false;
             await db.SaveChangesAsync();

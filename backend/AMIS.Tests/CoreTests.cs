@@ -67,7 +67,34 @@ public class CoreTests {
         var csv = $"firstName,lastName,sectionId,guardianName,guardianEmail\nAna,Santos,{section.Id},Maria Santos,maria@example.com\nAna,Santos,{section.Id},Maria Santos,maria@example.com";
         var rows = await ImportEndpoints.Preview(csv, db);
         Assert.Empty(rows[0].Errors);
-        Assert.Contains("Duplicate student in this section.", rows[1].Errors);
+        Assert.Contains("Student already exists in the school directory. Use Student List to manage enrollment.", rows[1].Errors);
+    }
+
+    [Fact]
+    public async Task Csv_preview_rejects_same_student_across_different_grades() {
+        await using var db = new AppDb(new DbContextOptionsBuilder<AppDb>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var first = new Section { Name = "Rizal", GradeLevel = new GradeLevel { Name = "Grade 1" } };
+        var second = new Section { Name = "Rosal", GradeLevel = new GradeLevel { Name = "Grade 2" } };
+        db.Sections.AddRange(first, second); await db.SaveChangesAsync();
+        var csv = $"firstName,lastName,sectionId,guardianName,guardianEmail\nAna Maria,Santos,{first.Id},Maria Santos,maria@example.com\n ana  maria ,SANTOS,{second.Id},Maria Santos,MARIA@example.com";
+        var rows = await ImportEndpoints.Preview(csv, db);
+        Assert.Empty(rows[0].Errors);
+        Assert.Single(rows[1].Errors);
+        Assert.Contains("school directory", rows[1].Errors[0]);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Duplicate_lookup_includes_unassigned_and_archived_students(bool archived) {
+        await using var db = new AppDb(new DbContextOptionsBuilder<AppDb>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
+        var guardian = new AppUser { Email = "maria@example.com" };
+        var student = new Student { FirstName = "Ana Maria", LastName = "Santos", StudentNumber = "STD-0000001", IsDeleted = archived };
+        student.Guardians.Add(new GuardianStudent { Student = student, Guardian = guardian });
+        db.Students.Add(student); await db.SaveChangesAsync();
+        Assert.Equal(student.Id, (await StudentRegistry.FindDuplicate(db, " ANA  MARIA ", "santos", "MARIA@example.com"))?.Id);
+        Assert.Null(await StudentRegistry.FindDuplicate(db, "Ana Maria", "Santos", "different@example.com"));
+        Assert.Null(await StudentRegistry.FindDuplicate(db, "Ana Maria", "Santos", "maria@example.com", student.Id));
     }
 
     [Fact]
