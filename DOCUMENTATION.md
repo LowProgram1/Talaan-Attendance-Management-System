@@ -207,7 +207,7 @@ Startup applies migrations and creates configured roles and an initial administr
 
 The optional `tunnel` profile permits temporary sharing with corresponding frontend URL/origin configuration. No real credentials, production hostname, or external-system API specifications are published here.
 
-For documentation maintenance, edit `DOCUMENTATION.md` and run `python docs/build_site.py` to regenerate `docs/index.md`. The existing Jekyll configuration and layout render the site; `DOCUMENTATIONS.md` preserves the old filename as a link to this guide.
+For documentation maintenance, edit `DOCUMENTATION.md` and run `python docs/build_site.py` to regenerate `docs/index.md`. The existing Jekyll configuration and layout render the site.
 
 ### API route overview
 
@@ -395,7 +395,7 @@ All items below are **proposed**, not completed integrations or installed functi
 
 ### Project evidence
 
-This revision was checked against backend models/routes, migrations, frontend components, and configuration. The old `DOCUMENTATIONS.md` filename now points to this guide.
+This revision was checked against backend models/routes, migrations, frontend components, and configuration.
 
 - Backend: `Models.cs`, `Program.cs`, `Auth.cs`, `Academics.cs`, `Students.cs`, `Attendance.cs`, `School.cs`, `Import.cs`, `DemoDataFactory.cs`, and migrations under `backend/AMIS.API/`.
 - Frontend: `frontend/src/app/`, password components/helpers, `package.json`, lockfile, `next.config.ts`, `postcss.config.mjs`, and CSS.

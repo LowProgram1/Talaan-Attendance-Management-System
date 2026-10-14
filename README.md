@@ -1,6 +1,6 @@
 # Talaan | Attendance Management Information System
 
-Attendance management for administrators and teachers, with email notices to guardian contacts. Built with ASP.NET Core 10, Next.js 16, PostgreSQL, and Docker Compose. See the [full documentation](DOCUMENTATIONS.md) for the module guide, database, screenshots, and Cloudflare testing setup.
+Attendance management for administrators and teachers, with email notices to guardian contacts. Built with ASP.NET Core 10, Next.js 16, PostgreSQL, and Docker Compose. See the [full documentation](DOCUMENTATION.md) for the module guide, database, screenshots, and Cloudflare testing setup.
 
 ## Start
 
