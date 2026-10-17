@@ -2,7 +2,7 @@
 
 A school attendance workspace for administrators and teachers, with email updates for parents and guardians. The system brings student records, class schedules, attendance entries, and reports together.
 
-This README provides the project overview and operating guide. See [DOCUMENTATION.md](DOCUMENTATION.md) for the detailed feature descriptions, database schema and ER diagram, recorded verification results, and references. The [documentation website](https://lowprogram1.github.io/Talaan-Attendance-Management-System/) presents the detailed guide online.
+This README provides the project background, objectives, scope, technology stack, operating guide, and proposed enhancements.
 
 ## Contents
 
@@ -86,7 +86,7 @@ Versions below reflect the project configuration.
 | Documentation | Markdown; Mermaid; Jekyll/GitHub Pages; Python | Documentation, ER diagrams, and website-source generation. |
 | Optional tools | DBeaver; Cloudflare Tunnel | Local database inspection and opt-in temporary web access. |
 
-OpenAI Codex assisted development and documentation. Official technology references and detailed provenance are listed in [References and credits](DOCUMENTATION.md#references-and-credits).
+OpenAI Codex assisted development and documentation.
 
 ## How to run the project
 
@@ -232,5 +232,3 @@ The following are proposed improvements, not completed integrations:
 | Academic history and data quality | Add school-year enrollment history, a subject catalog, richer guardian management, and reviewed XLSX support. |
 | Accessibility and usability | Improve keyboard and screen-reader support, chart alternatives, touch interaction, and language options based on user evaluation. |
 | Performance and operations | Profile larger datasets, extend server pagination, and improve monitoring, backup/recovery procedures, and regression coverage. |
-
-Refer to [Testing results and evaluation](DOCUMENTATION.md#testing-results-and-evaluation) for the distinction between recorded development checks and project-owner verification.
