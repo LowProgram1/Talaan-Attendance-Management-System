@@ -40,6 +40,7 @@ export default function StudentImportDialog({sectionId,onClose,onImported}:{sect
   async function choose(files:FileList|null){
     if(busy||!files?.length)return;
     reset();
+    if(!target){setError('Select a destination section before uploading.');return;}
     if(files.length!==1){setError('Choose one CSV file at a time.');return;}
     const next=files[0];
     if(!next.name.toLowerCase().endsWith('.csv')){setError('Use a .csv file. In Excel, save your spreadsheet as CSV UTF-8.');return;}
@@ -54,6 +55,7 @@ export default function StudentImportDialog({sectionId,onClose,onImported}:{sect
     finally{setBusy(false);}
   }
   async function commit(){
+    if(!target){setError('Select a destination section before importing.');return;}
     setBusy(true);setError('');
     try{
       const value=await post<ImportResult>('/students/import/commit',{csv,sectionId:target||null});
@@ -62,7 +64,7 @@ export default function StudentImportDialog({sectionId,onClose,onImported}:{sect
     }catch(e){setError(e instanceof Error?e.message:'Import failed. Review the Student List before retrying.');setRows([]);}
     finally{setBusy(false);}
   }
-  const template=`firstName,lastName,sectionId,guardianName,guardianEmail\r\n,,${target},,\r\n`;
+  const template=`firstName,lastName,guardianName,guardianEmail\r\n,,,\r\n`;
   const destination=sections.find(s=>s.id===target);
   return <div className="modal-backdrop" onMouseDown={()=>{if(!busy)onClose()}}>
     <div ref={dialog} tabIndex={-1} className="modal student-import-modal" role="dialog" aria-modal="true" aria-labelledby="student-import-title" onMouseDown={e=>e.stopPropagation()} onKeyDown={e=>{
@@ -77,7 +79,7 @@ export default function StudentImportDialog({sectionId,onClose,onImported}:{sect
     }}>
       <div className="modal-head"><div><h2 id="student-import-title" className="section-title">Batch import students</h2><p className="muted">Upload, review, then import your student records.</p></div><button className="icon-button" disabled={busy} aria-label="Close batch import" onClick={onClose}><X size={20}/></button></div>
       {sectionId?<p className="import-destination">Importing into <strong>{destination?`${destination.grade} / ${destination.name}`:'the selected class'}</strong></p>:<div className="import-destination"><SectionCombobox sections={sections} value={target} disabled={busy||!!result} onChange={value=>{reset();setTarget(value)}}/></div>}
-      <div className="import-template"><div><strong>Start with the template</strong><p className="muted">Fill in first name, last name, guardian name and email. {target?'Blank section IDs use the selected class.':'Select a section to prefill its ID, or enter a section ID on each row.'} School ID numbers are generated automatically.</p></div><a className="btn btn-outline" href={'data:text/csv;charset=utf-8,'+encodeURIComponent('\uFEFF'+template)} download="student-import-template.csv"><Download size={16}/>Download template</a></div>
+      <div className="import-template"><div><strong>Start with the template</strong><p className="muted">Fill in first name, last name, guardian name and email. All students in the file will be added to the selected destination section. School ID numbers are generated automatically.</p></div><a className="btn btn-outline" href={'data:text/csv;charset=utf-8,'+encodeURIComponent('\uFEFF'+template)} download="student-import-template.csv"><Download size={16}/>Download template</a></div>
       {!result&&<>
         <div className={`import-dropzone ${dragging?'is-dragging':''}`} onDragOver={e=>{e.preventDefault();if(!busy)setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);void choose(e.dataTransfer.files)}} aria-busy={busy}>
           <UploadCloud size={30}/><strong>{busy?'Processing your file…':'Drag and drop your CSV here'}</strong><span className="muted">One CSV file · Up to 1 MB</span>
@@ -89,7 +91,7 @@ export default function StudentImportDialog({sectionId,onClose,onImported}:{sect
       </>}
       {result&&<div className="import-result" role="status"><CheckCircle2 size={30}/><h3>Import complete</h3><p>{result.imported} students added · {result.invalid} invalid rows skipped · {result.failed.length} failed</p>{result.failed.map(r=><p className="error" key={r.line}>Row {r.line}: {r.error}</p>)}{result.invalid>0&&<p className="muted">Correct the flagged rows in your file before uploading again. Already imported students will be detected as duplicates.</p>}</div>}
       {error&&<p className="error" role="alert">{error}</p>}
-      <div className="form-actions"><button className="btn btn-outline" disabled={busy} onClick={onClose}>{result?'Done':'Cancel'}</button>{result?<button className="btn btn-primary" onClick={reset}>Import another file</button>:<button className="btn btn-primary" disabled={busy||!valid} aria-busy={busy} onClick={commit}>{busy?'Processing…':'Import'}</button>}</div>
+      <div className="form-actions"><button className="btn btn-outline" disabled={busy} onClick={onClose}>{result?'Done':'Cancel'}</button>{result?<button className="btn btn-primary" onClick={reset}>Import another file</button>:<button className="btn btn-primary" disabled={busy||!target||!valid} aria-busy={busy} onClick={commit}>{busy?'Processing…':'Import'}</button>}</div>
     </div>
   </div>;
 }

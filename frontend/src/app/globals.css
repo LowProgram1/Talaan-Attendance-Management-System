@@ -447,3 +447,14 @@ body,.main{background:#fff}
 .password-meter-rules{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}.password-meter-rules li{display:flex;align-items:center;gap:7px;color:#8a96a4;font-size:11px;line-height:1.45}.password-meter-rules svg{flex:none}.password-meter-rules .met{color:#31836c}
 @media(max-width:480px){.recovery-page{padding:20px 14px}.recovery-card{padding:26px 22px;border-radius:16px}.recovery-card h1{font-size:25px}.password-meter-rules{gap:8px}.password-meter-rules li{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.password-meter-bars span{transition:none}}
+
+/* Full product name remains readable in compact navigation and auth layouts. */
+.brand{height:auto;min-height:100px;flex:0 0 auto}
+.brand-copy{min-width:0;white-space:normal}
+.brand-copy strong{display:block;font-size:14px;line-height:1.35;overflow-wrap:break-word}
+.sidebar.collapsed .brand{min-height:74px}
+.auth-brand,.login-form-brand{max-width:100%;min-width:0}
+.auth-brand img,.login-form-brand img{flex-shrink:0}
+.auth-brand strong,.login-form-brand span{min-width:0;white-space:normal;line-height:1.4;overflow-wrap:break-word}
+.auth-brand strong{font-size:17px}
+.login-simple .login-form-brand{font-size:17px;letter-spacing:-.02em}

@@ -11,16 +11,16 @@ export default function SectionCombobox({sections,value,disabled,onChange}:{sect
   const [active,setActive]=useState(0);
   const input=useRef<HTMLInputElement>(null);
   const selected=sections.find(s=>s.id===value);
-  const options=[{id:'',name:'Use section IDs from CSV',grade:'Multiple sections'},...sections];
+  const options=sections;
   const words=query.toLowerCase().trim().split(/\s+/);
-  const filtered=options.filter(s=>words.every(word=>`${s.grade} ${s.name} ${s.id}`.toLowerCase().includes(word)));
+  const filtered=options.filter(s=>words.every(word=>`${s.grade} ${s.name}`.toLowerCase().includes(word)));
   function choose(next:string){onChange(next);setOpen(false);setQuery('');setActive(0);input.current?.focus();}
   function move(index:number){setActive(index);document.getElementById(`${id}-option-${index}`)?.scrollIntoView({block:'nearest'});}
 
   return <div className="section-combobox" onBlur={e=>{if(!e.currentTarget.contains(e.relatedTarget)){setOpen(false);setQuery('');}}}>
     <label className="label" htmlFor={id}>Destination section</label>
     <div className={`section-combobox-input ${open?'is-open':''}`}><Search size={17}/>
-      <input ref={input} id={id} role="combobox" aria-expanded={open} aria-autocomplete="list" aria-controls={`${id}-list`} aria-activedescendant={open&&filtered[active]?`${id}-option-${active}`:undefined} autoComplete="off" disabled={disabled} value={open?query:selected?`${selected.grade} / ${selected.name}`:'Use section IDs from CSV'} placeholder="Search grade, section or ID…" onFocus={()=>{setOpen(true);setQuery('');setActive(0)}} onClick={()=>setOpen(true)} onChange={e=>{setQuery(e.target.value);setActive(0);setOpen(true)}} onKeyDown={e=>{
+      <input ref={input} id={id} role="combobox" aria-expanded={open} aria-autocomplete="list" aria-controls={`${id}-list`} aria-activedescendant={open&&filtered[active]?`${id}-option-${active}`:undefined} autoComplete="off" disabled={disabled} value={open?query:selected?`${selected.grade} / ${selected.name}`:''} placeholder="Search grade or section…" onFocus={()=>{setOpen(true);setQuery('');setActive(0)}} onClick={()=>setOpen(true)} onChange={e=>{setQuery(e.target.value);setActive(0);setOpen(true)}} onKeyDown={e=>{
         if(e.key==='Escape'&&open){e.preventDefault();e.stopPropagation();setOpen(false);setQuery('');}
         if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(!open){setOpen(true);setActive(0)}else move(Math.max(0,Math.min(filtered.length-1,active+(e.key==='ArrowDown'?1:-1))));}
         if(e.key==='Home'&&open){e.preventDefault();move(0)}

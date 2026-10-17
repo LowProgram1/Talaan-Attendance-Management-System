@@ -12,6 +12,6 @@ page = page.replace(
 )
 page = page.replace('<details><summary>', '<details markdown="1"><summary>')
 (root / "docs" / "index.md").write_text(
-    "---\nlayout: default\ntitle: Talaan Documentation\n---\n\n" + page,
+    "---\nlayout: default\ntitle: Student Attendance Management Information System Documentation\n---\n\n" + page,
     encoding="utf-8",
 )

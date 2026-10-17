@@ -15,7 +15,8 @@
     .skip { position: absolute; left: 1rem; top: -5rem; z-index: 3; background: white; padding: .5rem 1rem; }
     .skip:focus { top: .5rem; }
     .top { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: .7rem 1.4rem; color: white; background: #123a70; box-shadow: 0 2px 12px #10253f25; }
-    .top a { color: white; }
+    .top a { color: white; flex-shrink: 0; }
+    .top strong { min-width: 0; line-height: 1.35; overflow-wrap: break-word; }
     .shell { max-width: 1500px; margin: auto; display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 1.4rem; padding: 1.4rem; }
     .side { align-self: start; position: sticky; top: 4.3rem; display: grid; gap: .45rem; padding: 1rem; background: white; border: 1px solid #dce5ef; border-radius: 12px; }
     .side a { text-decoration: none; padding: .28rem .45rem; border-radius: 5px; }
@@ -41,7 +42,7 @@
 </head>
 <body>
   <a class="skip" href="#main-content">Skip to documentation</a>
-  <header class="top"><strong>Talaan Documentation</strong><a href="#contents">Jump to contents</a></header>
+  <header class="top"><strong>Student Attendance Management Information System Documentation</strong><a href="#contents">Jump to contents</a></header>
   <div class="shell">
     <nav class="side" aria-label="Documentation sections">
       <strong>Navigate</strong>
@@ -49,6 +50,7 @@
       <a href="#objectives-and-target-users">Objectives and users</a>
       <a href="#system-features-and-technology-stack">Features and technology</a>
       <a href="#database-structure-relational-entity-model-and-schema">Database and relationships</a>
+      <a href="#testing-results-and-evaluation">Testing results</a>
       <a href="#conclusion">Conclusion</a>
       <a href="#future-improvements">Future improvements</a>
       <a href="#references-and-credits">References and credits</a>

@@ -1,5 +1,5 @@
-title: Talaan Documentation
-description: Talaan attendance management system overview, implemented features, database relationships, and future improvements
+title: Student Attendance Management Information System Documentation
+description: Student Attendance Management Information System overview, implemented features, database relationships, and future improvements
 markdown: kramdown
 plugins:
   - jekyll-seo-tag

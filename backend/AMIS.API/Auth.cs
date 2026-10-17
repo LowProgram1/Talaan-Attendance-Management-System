@@ -20,7 +20,7 @@ public sealed record PasswordChangeConfirmRequest(string Otp, string NewPassword
 public sealed class EmailService(IConfiguration config) {
     public async Task SendAsync(string to, string subject, string body) {
         var host = config["EMAIL_HOST"] ?? throw new InvalidOperationException("EMAIL_HOST is required");
-        using var message = new MailMessage(config["EMAIL_FROM"] ?? config["EMAIL_USERNAME"]!, to) { Subject = subject, Body = $"<html><body style='font-family:Arial,sans-serif;color:#102743;background:#f6f8fb;padding:28px'><div style='max-width:560px;margin:auto;background:white;border-radius:14px;padding:30px'><h1 style='color:#123a70'>Talaan</h1>{body}<p style='margin-top:30px;color:#65758b;font-size:13px'>Attendance Management Information System</p></div></body></html>", IsBodyHtml = true };
+        using var message = new MailMessage(config["EMAIL_FROM"] ?? config["EMAIL_USERNAME"]!, to) { Subject = subject, Body = $"<html><body style='font-family:Arial,sans-serif;color:#102743;background:#f6f8fb;padding:28px'><div style='max-width:560px;margin:auto;background:white;border-radius:14px;padding:30px'><h1 style='color:#123a70'>Student Attendance Management Information System</h1>{body}<p style='margin-top:30px;color:#65758b;font-size:13px'>Student Attendance Management Information System</p></div></body></html>", IsBodyHtml = true };
         for (var attempt = 0; ; attempt++) {
             using var client = new SmtpClient(host, int.Parse(config["EMAIL_PORT"] ?? "587")) { EnableSsl = bool.Parse(config["EMAIL_USE_SSL"] ?? "true") };
             if (!string.IsNullOrWhiteSpace(config["EMAIL_USERNAME"])) client.Credentials = new NetworkCredential(config["EMAIL_USERNAME"], config["EMAIL_PASSWORD"]);
@@ -78,8 +78,8 @@ public static class AuthEndpoints {
                 ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(10) };
             db.OneTimeTokens.Add(token);
             await db.SaveChangesAsync();
-            try { await email.SendAsync(user.Email!, "Talaan password change code",
-                $"<p>Use this six-digit code to change your Talaan password. It expires in 10 minutes.</p><h2>{otp}</h2><p>If you did not request this, contact your school administrator.</p>"); }
+            try { await email.SendAsync(user.Email!, "Student Attendance Management Information System password change code",
+                $"<p>Use this six-digit code to change your Student Attendance Management Information System password. It expires in 10 minutes.</p><h2>{otp}</h2><p>If you did not request this, contact your school administrator.</p>"); }
             catch (Exception ex) {
                 logger.LogError(ex, "Password change code delivery failed");
                 token.Used = true;
@@ -114,7 +114,7 @@ public static class AuthEndpoints {
         api.MapPost("/test-notification", async (HttpContext ctx, UserManager<AppUser> users, EmailService email, ILogger<EmailService> logger) => {
             var user = await users.GetUserAsync(ctx.User);
             if (user?.Email is null) return Results.Unauthorized();
-            try { await email.SendAsync(user.Email, "Talaan notification test", "<p>This test confirms that Talaan can submit attendance notifications through the configured email service.</p><p>No student attendance was changed.</p>"); }
+            try { await email.SendAsync(user.Email, "Student Attendance Management Information System notification test", "<p>This test confirms that Student Attendance Management Information System can submit attendance notifications through the configured email service.</p><p>No student attendance was changed.</p>"); }
             catch (Exception ex) { logger.LogError(ex, "Test notification delivery failed"); return Results.Problem("The email service could not send the test notification.", statusCode: 503); }
             return Results.Ok(new { message = "Test notification accepted by the email server." });
         }).RequireAuthorization("Administrator");
@@ -138,8 +138,8 @@ public static class AuthEndpoints {
                         ? config["FRONTEND_URL"] ?? "http://localhost:3000" : config["PUBLIC_FRONTEND_URL"]!;
                     var link = WebUtility.HtmlEncode($"{frontendUrl.TrimEnd('/')}/reset?email={Uri.EscapeDataString(user.Email!)}&token={secret}");
                     try {
-                        await email.SendAsync(user.Email!, "Reset your Talaan password",
-                            $"<h2>Choose a new password</h2><p>We received a request to reset your Talaan password.</p><p style='margin:28px 0'><a href='{link}' style='background:#2365ae;color:white;padding:12px 20px;border-radius:8px;text-decoration:none'>Reset password</a></p><p>This link expires in 30 minutes and can be used once.</p><p>If the button does not open, copy this link into your browser:</p><p style='word-break:break-all'>{link}</p><p>If you did not request a reset, you can ignore this email. Your password will remain unchanged.</p>");
+                        await email.SendAsync(user.Email!, "Reset your Student Attendance Management Information System password",
+                            $"<h2>Choose a new password</h2><p>We received a request to reset your Student Attendance Management Information System password.</p><p style='margin:28px 0'><a href='{link}' style='background:#2365ae;color:white;padding:12px 20px;border-radius:8px;text-decoration:none'>Reset password</a></p><p>This link expires in 30 minutes and can be used once.</p><p>If the button does not open, copy this link into your browser:</p><p style='word-break:break-all'>{link}</p><p>If you did not request a reset, you can ignore this email. Your password will remain unchanged.</p>");
                     } catch (Exception ex) {
                         logger.LogError(ex, "Password reset email delivery failed");
                         token.Used = true;
@@ -203,7 +203,7 @@ public static class AuthEndpoints {
                 ? config["FRONTEND_URL"] ?? "http://localhost:3000"
                 : config["PUBLIC_FRONTEND_URL"]!;
             var link = $"{frontendUrl.TrimEnd('/')}/activate?email={Uri.EscapeDataString(user.Email!)}&token={token}";
-            await email.SendAsync(user.Email!, "Activate your Talaan account", $"<p>Welcome, {WebUtility.HtmlEncode(user.FullName)}. Set your password to activate your account.</p><p><a href='{link}' style='background:#2365ae;color:white;padding:12px 18px;border-radius:8px;text-decoration:none'>Activate account</a></p><p>This link expires in 48 hours.</p>");
+            await email.SendAsync(user.Email!, "Activate your Student Attendance Management Information System account", $"<p>Welcome, {WebUtility.HtmlEncode(user.FullName)}. Set your password to activate your account.</p><p><a href='{link}' style='background:#2365ae;color:white;padding:12px 18px;border-radius:8px;text-decoration:none'>Activate account</a></p><p>This link expires in 48 hours.</p>");
             return Results.Created($"/api/users/{user.Id}", new { user.Id, user.FullName, user.Email, role });
         }).RequireAuthorization("Administrator");
         api.MapPut("/users/{id:guid}", async (Guid id, UserEditRequest input, HttpContext ctx,

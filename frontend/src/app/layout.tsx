@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Talaan | Attendance Management Information System",
+  title: "Student Attendance Management Information System",
   description: "Attendance management for schools and families",
-  icons: { icon: "/talaan-mark.svg" },
+  icons: { icon: "/student-attendance-mark.svg" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

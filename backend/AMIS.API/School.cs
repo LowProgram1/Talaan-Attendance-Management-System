@@ -105,6 +105,14 @@ public static class SchoolEndpoints {
             return Results.Ok(rows);
         }).RequireAuthorization("Staff");
         api.MapGet("/users", async (UserManager<AppUser> users, AppDb db) => { var all = await users.Users.OrderBy(u => u.FullName).ToListAsync(); var childCounts = await db.GuardianStudents.Where(x => !x.Student.IsDeleted).GroupBy(x => x.GuardianId).Select(x => new { id = x.Key, count = x.Count() }).ToDictionaryAsync(x => x.id, x => x.count); var list = new List<object>(); foreach(var u in all) { var roles = await users.GetRolesAsync(u); var role = roles.Contains("Administrator") ? "Administrator" : roles.Contains("Teacher") ? "Teacher" : roles.FirstOrDefault() ?? "Unknown"; list.Add(new { u.Id, u.FullName, u.Email, u.EmailConfirmed, role, roles, children = roles.Contains("Guardian") ? childCounts.GetValueOrDefault(u.Id) : 0 }); } return Results.Ok(list); }).RequireAuthorization("Administrator");
-        api.MapGet("/alerts", async (AppDb db) => await db.AlertLogs.OrderByDescending(x => x.CreatedAt).Take(100).ToListAsync()).RequireAuthorization("Administrator");
+        api.MapGet("/alerts", async (int? page, AppDb db) => {
+            const int pageSize = 20;
+            var total = await db.AlertLogs.CountAsync();
+            var currentPage = Math.Clamp(page ?? 1, 1, Math.Max(1, (int)Math.Ceiling(total / (double)pageSize)));
+            var items = await db.AlertLogs.AsNoTracking()
+                .OrderByDescending(x => x.CreatedAt).ThenByDescending(x => x.Id)
+                .Skip((currentPage - 1) * pageSize).Take(pageSize).ToListAsync();
+            return Results.Ok(new { items, total, page = currentPage, pageSize });
+        }).RequireAuthorization("Administrator");
     }
 }

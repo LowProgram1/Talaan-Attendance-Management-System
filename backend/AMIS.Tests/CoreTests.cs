@@ -64,8 +64,8 @@ public class CoreTests {
         await using var db = new AppDb(new DbContextOptionsBuilder<AppDb>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
         var grade = new GradeLevel { Name = "Grade 7", Department = "Junior High" }; var section = new Section { Name = "A", GradeLevel = grade };
         db.Sections.Add(section); await db.SaveChangesAsync();
-        var csv = $"firstName,lastName,sectionId,guardianName,guardianEmail\nAna,Santos,{section.Id},Maria Santos,maria@example.com\nAna,Santos,{section.Id},Maria Santos,maria@example.com";
-        var rows = await ImportEndpoints.Preview(csv, db);
+        var csv = "firstName,lastName,guardianName,guardianEmail\nAna,Santos,Maria Santos,maria@example.com\nAna,Santos,Maria Santos,maria@example.com";
+        var rows = await ImportEndpoints.Preview(csv, db, targetSectionId: section.Id);
         Assert.Empty(rows[0].Errors);
         Assert.Contains("Student already exists in the school directory. Use Student List to manage enrollment.", rows[1].Errors);
     }
@@ -76,11 +76,15 @@ public class CoreTests {
         var first = new Section { Name = "Rizal", GradeLevel = new GradeLevel { Name = "Grade 1" } };
         var second = new Section { Name = "Rosal", GradeLevel = new GradeLevel { Name = "Grade 2" } };
         db.Sections.AddRange(first, second); await db.SaveChangesAsync();
-        var csv = $"firstName,lastName,sectionId,guardianName,guardianEmail\nAna Maria,Santos,{first.Id},Maria Santos,maria@example.com\n ana  maria ,SANTOS,{second.Id},Maria Santos,MARIA@example.com";
-        var rows = await ImportEndpoints.Preview(csv, db);
-        Assert.Empty(rows[0].Errors);
-        Assert.Single(rows[1].Errors);
-        Assert.Contains("school directory", rows[1].Errors[0]);
+        var guardian = new AppUser { Email = "maria@example.com" };
+        var existing = new Student { FirstName = "Ana Maria", LastName = "Santos", StudentNumber = "STD-0000001", SectionId = first.Id };
+        existing.Guardians.Add(new GuardianStudent { Student = existing, Guardian = guardian });
+        db.Students.Add(existing);
+        await db.SaveChangesAsync();
+        var csv = "firstName,lastName,guardianName,guardianEmail\n ana  maria ,SANTOS,Maria Santos,MARIA@example.com";
+        var rows = await ImportEndpoints.Preview(csv, db, targetSectionId: second.Id);
+        Assert.Single(rows[0].Errors);
+        Assert.Contains("school directory", rows[0].Errors[0]);
     }
 
     [Theory]

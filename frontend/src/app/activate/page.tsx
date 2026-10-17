@@ -39,7 +39,7 @@ function Activation() {
 
   return <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 20 }}>
     <form onSubmit={submit} className="card" style={{ width: 'min(100%,460px)', padding: 32 }}>
-      <div className="auth-brand"><Image src="/talaan-mark.svg" alt="Talaan logo" width={38} height={38}/><strong>Talaan</strong></div>
+      <div className="auth-brand"><Image src="/student-attendance-mark.svg" alt="Student Attendance Management Information System logo" width={38} height={38}/><strong>Student Attendance Management Information System</strong></div>
       <h1 className="heading">Activate your account</h1>
       <p className="muted" style={{ margin: '8px 0 26px' }}>Set a strong password to access your school workspace.</p>
 

@@ -1,4 +1,4 @@
-# Talaan — Attendance Management Information System
+# Student Attendance Management Information System
 
 **System documentation · Updated 14 October 2026**
 
@@ -12,15 +12,16 @@ This guide describes the implementation inspected in the project workspace, incl
 2. [Objectives and target users](#objectives-and-target-users)
 3. [System features and technology stack](#system-features-and-technology-stack)
 4. [Database structure, relational entity model, and schema](#database-structure-relational-entity-model-and-schema)
-5. [Conclusion](#conclusion)
-6. [Future improvements](#future-improvements)
-7. [References and credits](#references-and-credits)
+5. [Testing results and evaluation](#testing-results-and-evaluation)
+6. [Conclusion](#conclusion)
+7. [Future improvements](#future-improvements)
+8. [References and credits](#references-and-credits)
 
 ## Introduction and problem statement
 
 ### Introduction
 
-Talaan is an Attendance Management Information System designed to support teachers' everyday work and improve communication between schools and families. It brings class lists, schedules, attendance entries, and summaries into one workspace. Teachers can record whether a student is present, absent, late, or excused, while parents and guardians receive email updates about their children's recorded attendance.
+The Student Attendance Management Information System is a school attendance system designed to support teachers' everyday work and improve communication between schools and families. It brings class lists, schedules, attendance entries, and summaries into one workspace. Teachers can record whether a student is present, absent, late, or excused, while parents and guardians receive email updates about their children's recorded attendance.
 
 Organized records help school personnel follow up on attendance concerns without searching through scattered notes. Students benefit from clearer records and more timely support. Administrators support this work by organizing classes, managing staff access, and reviewing school attendance information.
 
@@ -66,7 +67,7 @@ The database supports multiple children per guardian and multiple guardian links
 
 ### Account access and password management
 
-- **Staff access:** active, confirmed Administrator and Teacher accounts sign in with email/password. Remember-me controls session persistence; sign-out ends the session. Guardian contacts cannot sign in.
+- **Staff access:** active, confirmed Administrator and Teacher accounts sign in with email/password. Remember-me controls session persistence and saves the email on this browser after a successful login. Returning after sign-out restores the email and checked preference; unchecking clears the saved email. Password autofill is handled by the browser password manager. Sign-out ends the session. Guardian contacts cannot sign in.
 - **Invitations and activation:** administrators invite Teachers or Administrators. A single-use activation link allows an initial password to be set and expires after 48 hours.
 - **Forgot password:** eligible staff receive a single-use reset link valid for 30 minutes. The reset page provides labeled New password and Confirm password fields, independent show/hide buttons, matching feedback, and a strength meter. Expired/used links are rejected.
 - **Signed-in password change:** Settings uses a separate six-digit email code, expiring after 10 minutes with at most five attempts. This is distinct from the forgot-password link workflow.
@@ -111,10 +112,10 @@ Student List and Attendance share drag-and-drop/browse upload, file details, rep
 Required columns, in order:
 
 ```csv
-firstName,lastName,sectionId,guardianName,guardianEmail
+firstName,lastName,guardianName,guardianEmail
 ```
 
-Student List has a destination selector searchable by grade, section name, or section ID. The selected section prefills the template and supplies blank section cells. Without a selected destination, each row must provide an authorized active section ID. Attendance fixes the destination to the current class and rejects conflicting section IDs.
+Student List requires a destination section selected by grade and section name before uploading. Every row is assigned to that selection; no section ID or section name is entered in the spreadsheet. Attendance uses the current class as the destination. The API validates that the selected section is active and authorized during both preview and import. Use the new four-column template; older five-column templates must have their `sectionId` column removed.
 
 Preview flags invalid names, email, section access, and matching duplicates. Commit revalidates and imports valid rows individually, reporting imported, invalid, and failed counts. It is not an all-or-nothing operation or an enrollment-transfer tool. XLSX uploads and multiline quoted CSV fields are not supported by the line-based parser.
 
@@ -134,7 +135,7 @@ After attendance is saved, emails are attempted for linked guardians on first en
 
 An alert log records each recipient attempt. “Delivered” means the SMTP send operation succeeded, not proof of inbox arrival or opening. Attendance remains saved if sending fails. The email service retries DNS-resolution failures up to twice after the first attempt; there is no durable delivery queue or general redelivery system.
 
-Administrators see the latest 100 alert records with pagination. Forgot-password send failures return a retry message rather than claiming success. Real delivery requires an operational SMTP service.
+Administrators browse all alert records in a numbered table with server pagination (20 per page), ordered by creation date/time descending and then ID descending for equal timestamps. Dates and times are displayed in Asia/Manila. Forgot-password send failures return a retry message rather than claiming success. Real delivery requires an operational SMTP service.
 
 ### Reports and exports
 
@@ -367,9 +368,73 @@ erDiagram
 | `20261013040553_ScheduleWeekday` | Nullable weekday. |
 | `20261013093050_StudentDirectoryEnrollment` | Optional student section and restrictive FK deletion. |
 
+## Testing results and evaluation
+
+### Scope and evidence
+
+This section consolidates development verification records and the project owner's confirmation that all 27 listed feature areas were personally verified. All feature results below are recorded as **Verified - project owner confirmation**. This records the owner's reported verification; no new application tests were executed by the documentation assistant for this update. Detailed per-case execution logs, test dates, device/browser versions, and automated test-run reports were not supplied with the confirmation.
+
+The evidence comes from:
+
+- **E1 — Recorded setup verification:** the completed checklist in `docs/superpowers/plans/2026-10-13-dashboard-schedule-users-demo.md` records successful builds/startup, read-only database checks, and a repeated demo-seed operation with unchanged counts. This is a development checklist, not an attached raw execution log.
+- **E2 — Recorded table review:** `docs/superpowers/plans/2026-10-13-table-row-numbering-pagination.md` records table numbering/pagination review and `git diff --check`. It explicitly excludes running a test suite.
+- **E3 — Recent local execution:** development-session output records successful backend publishing, frontend production compilation and TypeScript checking, Docker service restarts, a backend health response, and frontend/brand-asset HTTP responses. The Alerts change and subsequent label removal also completed frontend builds and restarts. These results apply to the local workspace at that time, including uncommitted changes.
+- **E4 — Existing automated checks:** `backend/AMIS.Tests/CoreTests.cs` contains checks for notification content, excuse validation/HTML encoding, attendance-rate calculation, staff roles, password strength, token hashing, duplicate detection, and student-number formatting. Their presence establishes intended coverage; no execution result is asserted here.
+- **E5 — Implementation inspection:** the models, routes, and frontend modules described in this guide establish what is implemented. Inspection alone does not prove correct runtime behavior.
+
+- **E6 - Project owner verification:** the owner confirmed, "I verified all myself," and requested that all recorded observations and results be marked verified. This confirmation applies to the 27 feature areas in the table below.
+
+### Result definitions
+
+| Result | Meaning |
+| --- | --- |
+| Verified - project owner confirmation | The project owner reports personally verifying the feature and confirms its result. |
+| Recorded supporting evidence | Earlier build, startup, data-check, or review evidence supplements the owner's confirmation where available. |
+| Automated execution status | Existing test code is listed as supporting context only; no automated pass result is inferred from manual verification. |
+
+### Consolidated feature testing results
+
+| No. | Feature or area | Check and expected behavior | Recorded observation and result | Verification source and supporting evidence |
+| --- | --- | --- | --- | --- |
+| 1 | Build and local startup | Backend and frontend compile; services start and respond locally. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. Earlier recorded check: ** backend publish, Next.js production build/TypeScript checks, service startup, and local availability checks succeeded. | E6 (owner confirmation). Supporting context: E1, E3. |
+| 2 | Staff sign-in and sign-out | Eligible staff sign in, session persistence follows remember-me, and sign-out ends access. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 3 | Staff invitation and activation | Only allowed staff roles can be invited; activation links set an initial password and reject reuse/expiry. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4, E5. |
+| 4 | Forgot-password link | Request a reset email, set matching strong passwords, and reject invalid/expired/used links. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 5 | Password policy and token helpers | Weak passwords fail; salted hashes verify only the correct token. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4. |
+| 6 | Settings and password change | Profile name updates; email stays read-only; a valid six-digit code changes the password. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 7 | Permissions and access boundaries | Administrators and teachers see and change only permitted data; guardian contacts cannot sign in. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 8 | Dashboard totals and analytics | Cards, community/subject charts, and daily/weekly/monthly trends reflect saved data and role scope. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4, E5. |
+| 9 | Today's Classes and quick actions | Current-weekday and legacy daily schedules appear; actions open the intended modules. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E1. |
+| 10 | Academic setup and schedule maintenance | Create/edit academic records; reject time conflicts; archive/restore safely. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 11 | Demo data and class assignment | Factory creates the intended roster, guardian linkage, and weekday timetable without duplication on rerun. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. Earlier recorded check: ** the completed checklist records 20 active students in the selected Grade 1 class, teacher assignment, guardian linkage, five weekday schedule rows, and unchanged counts after rerun. | E6 (owner confirmation). Supporting context: E1. |
+| 12 | Student List search and display | Search/filter students, show enrollment and School ID No., and hide internal UUIDs. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 13 | Duplicate detection and school numbers | Detect normalized duplicates across grades, including archived/unassigned students; format school numbers consistently. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4. |
+| 14 | Direct creation and enrollment | Add a student directly or select an active unassigned directory student for an authorized section. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 15 | Student transfers and maintenance | Preserve identity/history during transfers, edits, archive, and restore. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 16 | CSV upload and template | Download the template, choose/search the destination, upload or replace a CSV, and preview its rows. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 17 | CSV validation and import | Flag invalid/duplicate rows and import only valid rows with accurate counts. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4, E5. |
+| 18 | Attendance entry and excuse reasons | Save the complete roster with Present, Absent, Late, or Excused; require an excuse reason. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4. |
+| 19 | Corrections and submission history | Past-date corrections require a reason; snapshots preserve revisions and retries do not duplicate submissions. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 20 | Guardian notifications | Send the appropriate notice for new/changed attendance and retain attendance if email fails. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E4, E5. |
+| 21 | Alerts table pagination and ordering | Display 20 alerts per page with continuous row numbers; newest timestamps first across pages. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E3, E5. |
+| 22 | Reports and CSV export | Day/week/month totals match attendance; export includes all loaded report rows. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 23 | User management | Search/filter staff, invite/edit permitted accounts, and protect referenced accounts from deletion. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E1, E5. |
+| 24 | Numbered module tables | Tables display a leading row number and consistent page boundaries. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E2. |
+| 25 | Responsive UI and accessibility | Navigation remains usable while scrolling; tables fit/scroll; controls work on different devices and with a keyboard. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. | E6 (owner confirmation). Supporting context: E5. |
+| 26 | Branding | Updated product name and brand asset are available in the application. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. Earlier recorded check: ** frontend title and renamed SVG returned successfully after rebuild. | E6 (owner confirmation). Supporting context: E3. |
+| 27 | Database inspection | Connect locally and inspect tables and relationships. | **Verified - project owner confirmation:** the owner reports personally verifying this feature against the described behavior. Earlier recorded check: ** the development session records a successful DBeaver connection, public-schema table display, and ER diagram opening. | E6 (owner confirmation). Supporting context: recorded local DBeaver session. |
+
+### Interpretation and follow-up
+
+**All 27 feature areas are marked verified based on the project owner's personal confirmation.** Earlier development records provide additional evidence for builds, local availability, demo-data reconciliation, table review, and database inspection. The owner's confirmation updates the previous pending feature statuses. Subsequent changes to Remember me and the four-column CSV import were build-checked separately; the earlier owner confirmation is not a new runtime acceptance result for those changes.
+
+This summary records user-reported verification, not an independently reproduced automated test run or a formal security/accessibility certification. Existing unit tests remain useful supporting material, but no execution outcome is claimed for them. The confirmation does not extend to proposed integrations, guardian dashboards, or mobile applications that are not implemented.
+
+For subsequent releases, retain the code revision, environment, test steps, expected and actual outcomes, and supporting screenshots or logs alongside each verification result. Recheck affected features after changes and track automated test execution separately from manual acceptance.
+
 ## Conclusion
 
-Talaan brings attendance work into a shared, organized process. Teachers find classes, reuse student records, record attendance, and review summaries. Students benefit from consistent records, while families receive attendance information by email. Administrators support the process through academic setup, access management, and review tools.
+Student Attendance Management Information System brings attendance work into a shared, organized process. Teachers find classes, reuse student records, record attendance, and review summaries. Students benefit from consistent records, while families receive attendance information by email. Administrators support the process through academic setup, access management, and review tools.
 
 The system combines enrollment controls, attendance history, reports, and notifications to reduce repetitive work and improve communication. Reliable email, careful data entry, staff training, and evaluation in school use remain necessary to achieve those expected benefits.
 

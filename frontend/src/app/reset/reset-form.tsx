@@ -34,7 +34,7 @@ export default function ResetForm(){
     finally{setBusy(false);}
   }
   return <main className="recovery-page"><section className="recovery-card">
-    <div className="auth-brand"><Image src="/talaan-mark.svg" alt="Talaan logo" width={36} height={36}/><strong>Talaan</strong></div>
+    <div className="auth-brand"><Image src="/student-attendance-mark.svg" alt="Student Attendance Management Information System logo" width={36} height={36}/><strong>Student Attendance Management Information System</strong></div>
     <div className="recovery-icon">{done?<CheckCircle2 size={25}/>:<LockKeyhole size={25}/>}</div>
     <h1>{done?'Password updated':!linkPresent?'Request a new link':'Create a new password'}</h1>
     {done?<div role="status"><p className="recovery-intro">Your new password is ready. Sign in to continue to your school workspace.</p><Link className="btn btn-primary recovery-submit" href="/">Continue to sign in</Link></div>:!linkPresent?<><p className="recovery-intro">This password reset link is incomplete or invalid. Request a new link to continue.</p><Link className="btn btn-primary recovery-submit" href="/forgot">Request reset link</Link></>:<>
